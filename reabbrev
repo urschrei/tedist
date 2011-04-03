@@ -8,25 +8,42 @@ Attempt to read the contents of a .textexpander plist file, and generate a new f
 import plistlib
 import sys
 import os.path
+import argparse
 
-# Extract folder and filename
-infile = sys.argv[1]
-basename, extension = os.path.splitext(infile)
 
-# Make sure it's a TextExpander file.
-if extension != '.textexpander':
-    print("%s is not a TextExpander file." % infile)
-    sys.exit(-1)
+parser = argparse.ArgumentParser(
+    description = 'Replace TextExpander prefixes with standard prefix')
+
+
+
+class TXFile(argparse.FileType):
+    """
+    subclass argparse FileType in order to do some input file error checking
+    """
+    def __call__(self, string):
+        base, ext = os.path.splitext(string)
+        if ext != '.textexpander':
+            msg = "The input filename must have a .textexpander extension."
+            raise parser.error(msg)
+        try:
+            return super(TXFile, self).__call__(string)
+        except IOError:
+            print "Couldn't open %s to read from." % string
+            sys.exit(-1)
+
+parser.add_argument(
+    "infile", type = TXFile("r"),
+    metavar = "filename.textexpander",
+    help = "a .textexpander file")
+
+fromcl = parser.parse_args()
+basename, extension = os.path.splitext(fromcl.infile.name)
 
 # Generate the new filename.
 outfile = basename + "-2" + extension
 
 # Parse the snippet file.
-try:
-    te = plistlib.readPlist(infile)
-except IOError:
-    print("Couldn't open %s to read from." % infile)
-    sys.exit(-1)
+te = plistlib.readPlist(fromcl.infile)
 
 # Go through the snippets, allowing the user to change each abbreviation.
 for i in range(len(te['snippetsTE2'])):
