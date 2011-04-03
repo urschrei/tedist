@@ -25,7 +25,11 @@ class TXFile(argparse.FileType):
         if ext != '.textexpander':
             msg = "The input filename must have a .textexpander extension."
             raise parser.error(msg)
-        return super(TXFile, self).__call__(string)
+        try:
+            return super(TXFile, self).__call__(string)
+        except IOError:
+            raise parser.error("Couldn't open %s to read from." % string)
+
 
 
 parser.add_argument(
@@ -44,11 +48,7 @@ basename, extension = os.path.splitext(fromcl.infile.name)
 tedist = basename + '.tedist'
 
 # Parse the snippet file
-try:
-    te = plistlib.readPlist(fromcl.infile)
-except IOError:
-    print("Couldn't open %s to read from." % fromcl.infile)
-    sys.exit(-1)
+te = plistlib.readPlist(fromcl.infile)
 
 # Go through the snippets, replacing each prefix with [[PREFIX]].
 for i in range(len(te['snippetsTE2'])):

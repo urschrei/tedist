@@ -28,8 +28,9 @@ class TXFile(argparse.FileType):
         try:
             return super(TXFile, self).__call__(string)
         except IOError:
-            print "Couldn't open %s to read from." % string
-            sys.exit(-1)
+            raise parser.error("Couldn't open %s to read from." % string)
+
+
 
 parser.add_argument(
     "infile", type = TXFile("r"),
