@@ -11,6 +11,10 @@ import os.path
 import argparse
 
 
+parser = argparse.ArgumentParser(
+    description = 'Replace TextExpander prefixes with standard prefix')
+
+
 
 class TXFile(argparse.FileType):
     """
@@ -19,24 +23,24 @@ class TXFile(argparse.FileType):
     def __call__(self, string):
         base, ext = os.path.splitext(string)
         if ext != '.textexpander':
-            raise ValueError('%s must have a .textexpander extension' % string)
+            msg = "The input filename must have a .textexpander extension."
+            raise parser.error(msg)
         return super(TXFile, self).__call__(string)
 
-
-
-parser = argparse.ArgumentParser(
-    description = 'Replace TextExpander snippet prefixes with a standard prefix')
 
 parser.add_argument(
     "infile", type = TXFile("r"),
     metavar = "filename.textexpander",
     help = "a .textexpander file")
 
+parser.add_argument(
+        "prefix",
+        help = "The prefix you wish to replace. Specify using quotes, e.g. \':\'")
 
 fromcl = parser.parse_args()
 basename, extension = os.path.splitext(fromcl.infile.name)
 
-# Generate the new filname.
+# Generate the new filename.
 tedist = basename + '.tedist'
 
 # Parse the snippet file
@@ -59,4 +63,6 @@ try:
     print "wrote:", tedist
 except IOError:
     print "Couldn't write new textexpander file", tedist
+    sys.exit(-1)
+
 
