@@ -8,31 +8,48 @@ Read a .textexpander snippet file and generate a .tedist file with standardized 
 import plistlib
 import sys
 import os.path
+import argparse
 
-# Extract folder and filename
-infile = sys.argv[1]
-prefix = sys.argv[2]
-basename, extension = os.path.splitext(infile)
 
-# Make sure it's a TextExpander file.
-if extension != '.textexpander':
-    print("%s is not a TextExpander file." % infile)
-    sys.exit(-1)
 
-# Generate the new filename.
+class TXFile(argparse.FileType):
+    """
+    subclass argparse FileType in order to do some input file error checking
+    """
+    def __call__(self, string):
+        base, ext = os.path.splitext(string)
+        if ext != '.textexpander':
+            raise ValueError('%s must have a .textexpander extension' % string)
+        return super(TXFile, self).__call__(string)
+
+
+
+parser = argparse.ArgumentParser(
+    description = 'Replace TextExpander snippet prefixes with a standard prefix')
+
+parser.add_argument(
+    "infile", type = TXFile("r"),
+    metavar = "filename.textexpander",
+    help = "a .textexpander file")
+
+
+fromcl = parser.parse_args()
+basename, extension = os.path.splitext(fromcl.infile.name)
+
+# Generate the new filname.
 tedist = basename + '.tedist'
 
 # Parse the snippet file
 try:
-    te = plistlib.readPlist(infile)
+    te = plistlib.readPlist(fromcl.infile)
 except IOError:
-    print("Couldn't open %s to read from." % infile)
+    print("Couldn't open %s to read from." % fromcl.infile)
     sys.exit(-1)
 
 # Go through the snippets, replacing each prefix with [[PREFIX]].
 for i in range(len(te['snippetsTE2'])):
-    prelength = len(prefix)
-    if te['snippetsTE2'][i]['abbreviation'][0:prelength] == prefix:
+    prelength = len(fromcl.prefix)
+    if te['snippetsTE2'][i]['abbreviation'][0:prelength] == fromcl.prefix:
         te['snippetsTE2'][i]['abbreviation'] = '[[PREFIX]]' + \
         te['snippetsTE2'][i]['abbreviation'][prelength:]
 
